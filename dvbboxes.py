@@ -23,6 +23,10 @@ TOWNS = [
     if name.startswith('CLUSTER:')
     ]
 
+CHANNELS = {
+    i: CONFIG.get('CHANNELS', i) for i in CONFIG.options('CHANNELS')
+    }
+
 for town in sorted(TOWNS):
     CLUSTER[town] = CONFIG.options('CLUSTER:'+town)
 
@@ -45,6 +49,7 @@ reload(sys)
 sys.setdefaultencoding('utf-8')
 
 __all__ = [
+    'CHANNELS',
     'CLUSTER',
     'CONFIG',
     'Listing',
