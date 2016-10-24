@@ -49,7 +49,7 @@ class Program(object):
         try:
             datetime.strptime(day, '%d%m%Y')
         except ValueError as exc:
-            raise exc
+            raise ValueError(exc.message)
         else:
             self.day = day
             self.timestamp = timestamp or time.mktime(
@@ -71,10 +71,42 @@ class Program(object):
             for server in servers:
                 rdb = redis.Redis(host=server, db=0)
                 data = rdb.zrange(self.redis_zset_key, 0, -1, withscores=True)
-                if len(data) > foo[0] and data[-1][1] > foo[1]:
-                    foo = (len(data), data[-1][1])
-                    infos = data
-        return infos
+                if data:
+                    initial = data[0][1]
+                    if self.timestamp >= initial:
+                        recalculated_start = (
+                            self.timestamp - min(
+                                [
+                                    self.timestamp-item for entry, item in data
+                                    if item <= self.timestamp
+                                    ]
+                                )
+                            )
+                        data = rdb.zrangebyscore(
+                            self.redis_zset_key,
+                            recalculated_start,
+                            initial+86400,
+                            withscores=True
+                            )
+                    if len(data) > foo[0] and data[-1][1] > foo[1]:
+                        foo = (len(data), data[-1][1])
+                        infos = data
+        result = []
+        for filepath, timestamp in infos:
+            result.append((filepath.split('/')[-1], timestamp))
+        result = sorted(result, key=lambda x: int(x[0].split(':')[-1]))
+        return result
+
+    def get_start_time(self, filename, towns=None):
+        """returns the start time(s) of a filename in the program"""
+        if not filename.endswith('.ts'):
+            filename += '.ts'
+        result = [
+            timestamp for name, timestamp in self.infos(towns)
+            if name.split(':')[0].startswith(filename)
+            ]
+        result = sorted(result)
+        return result
 
 
 class Listing(object):
