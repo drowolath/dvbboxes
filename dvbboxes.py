@@ -16,13 +16,14 @@ CONFIG.read('/etc/dvbboxes/configuration')
 CLUSTER = collections.OrderedDict()
 
 TOWNS = [
-    name.split(':')[-1] for name in CONFIG.sections() if name.startswith('CLUSTER:')
+    name.split(':')[-1] for name in CONFIG.sections()
+    if name.startswith('CLUSTER:')
     ]
 
 for town in sorted(TOWNS):
     CLUSTER[town] = CONFIG.options('CLUSTER:'+town)
 
-# define logger 
+# define logger
 LOGGER = logging.getLogger()
 LOGGER.setLevel(int(CONFIG.get('LOG', 'level')))
 formatter = logging.Formatter(
@@ -37,31 +38,44 @@ LOGGER.addHandler(LOGS)
 
 class Program(object):
     """represents a program"""
-    def __init__(self, day=None, service_id=None, timestamp=None):
+    def __init__(self, day, service_id, timestamp=None):
         """
         :day: string representing a day under format %d%m%Y
         :service_id: integer representing a service id
         :timestamp: float representing a moment in time from which we want
         the program
         """
-        self.day = day
         self.service_id = str(service_id)
         try:
             datetime.strptime(day, '%d%m%Y')
         except ValueError as exc:
             raise exc
-        except TypeError as exc:  # day is None
-            pass
         else:
-            if day:
-                self.timestamp = timestamp or time.mktime(
-                    time.strptime('{} 073000'.format(self.day),
-                                  CONFIG.get('LOG', 'datefmt'))
-                    )
+            self.day = day
+            self.timestamp = timestamp or time.mktime(
+                time.strptime('{} 073000'.format(self.day),
+                              CONFIG.get('LOG', 'datefmt'))
+                )
+            self.redis_zset_key = '{day}:{service_id}'.format(
+                day=day, service_id=service_id)
 
-    def infos(self):
+    def infos(self, towns=None):
         """return adequate infos"""
-               
+        foo = (0, 0)
+        infos = None
+        if not towns:
+            towns = TOWNS
+        elif type(towns) is str:
+            towns = [towns]
+        for town in towns:
+            servers = CLUSTER[town]
+            for server in servers:
+                rdb = redis.Redis(host=server, db=0)
+                data = rdb.zrange(self.redis_zset_key, 0, -1, withscores=True)
+                if len(data) > foo[0] and data[-1][1] > foo[1]:
+                    foo = (len(data), data[-1][1])
+                    infos = data
+        return infos
 
 
 class Listing(object):
@@ -126,6 +140,8 @@ class Listing(object):
             del infos['day']
             if not towns:
                 towns = TOWNS
+            elif type(towns) is str:
+                towns = [towns]
             for town in towns:
                 servers = CLUSTER[town]
                 for server in servers:
@@ -277,48 +293,3 @@ class Town(object):
                 for key in rdb['programs'].keys('*:*'):
                     results.add(key)
             return list(results)
-                    
-            
-    def media(self, expression, new_name=None, search=False, delete=False):
-        """media manager for the town"""
-        if search:  # we search the cluster for *expression*
-            results = set()
-            for server, rdb in self.rdbs.items():
-                for filename in rdb['media'].keys('*{}*'.format(expression)):
-                    results.add(filename)
-            return list(results)
-        elif new_name:  # we rename expression to new_name
-            return
-        elif delete:  # we delete expression throughout the cluster
-            return
-        else:  # we return infos about expression
-            if not expression.endswith('.ts'):
-                expression += '.ts'
-            duration = 0
-            schedule = collections.OrderedDict()
-            for server, rdb in self.rdbs.items():
-                duration_value = rdb['media'].get(expression)
-                if duration_value and eval(duration_value) > duration:
-                    duration = eval(duration_value)
-
-                programs_keys = [
-                    i for i in rdb['programs'].keys('*:*')
-                    if rdb['programs'].type(i) == 'zset'
-                    ]
-                for key in programs_keys:
-                    day, service_id = key.split(':')
-                    program = rdb['programs'].zrange(
-                        key, 0, -1, withscores=True)
-                    result = [
-                        infos for infos in program
-                        if infos[0].split(':')[0].endswith('/'+expression)
-                        ]
-                    result = sorted(result, key=lambda x: x[1])
-                    if result:
-                        if service_id not in schedule:
-                            schedule[service_id] = set()
-                        for i, j in result:
-                            schedule[service_id].add(j)
-            return duration, schedule
-
-            
