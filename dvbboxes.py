@@ -250,7 +250,7 @@ class Media(object):
         return '<Media {}>'.format(self.name)
 
     @staticmethod
-    def search(self, expression, towns=None):
+    def search(expression, towns=None):
         """search for a filename in the cluster"""
         result = set()
         if not towns:
