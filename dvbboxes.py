@@ -249,6 +249,7 @@ class Media(object):
     def __repr__(self):
         return '<Media {}>'.format(self.name)
 
+    @staticmethod
     def search(self, expression, towns=None):
         """search for a filename in the cluster"""
         result = set()
