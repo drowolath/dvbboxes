@@ -249,6 +249,24 @@ class Media(object):
     def __repr__(self):
         return '<Media {}>'.format(self.name)
 
+    def search(self, expression, towns=None):
+        """search for a filename in the cluster"""
+        result = set()
+        if not towns:
+            towns = TOWNS
+        elif type(towns) is str:
+            towns = [towns]
+        for town in towns:
+            servers = CLUSTER[town]
+            for server in servers:
+                rdb = redis.Redis(
+                    port=CONFIG.get('CLUSTER:'+town, server),
+                    db=1
+                    )
+                for i in rdb.keys('*{}*'.format(expression)):
+                    result.add(i)
+        return sorted(list(result))
+
 
 def cli():
     MANAGER.run()
