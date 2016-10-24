@@ -53,8 +53,7 @@ class Program(object):
         else:
             self.day = day
             self.timestamp = timestamp or time.mktime(
-                time.strptime('{} 073000'.format(self.day),
-                              CONFIG.get('LOG', 'datefmt'))
+                time.strptime('{} 073000'.format(self.day), '%d%m%Y %H%M%S')
                 )
             self.redis_zset_key = '{day}:{service_id}'.format(
                 day=day, service_id=service_id)
