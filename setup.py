@@ -19,5 +19,8 @@ setup(
     long_description=readme(),
     license='Apache 2.0',
     include_package_data=True,
+    entry_points={
+        'console_scripts': ['dvbboxes=dvbboxes:cli'],
+        },
     url='http://gitlab.blueline.mg/default/dvbboxes.git',
 )
