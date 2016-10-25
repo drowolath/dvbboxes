@@ -284,9 +284,8 @@ class Media(object):
                     db=0
                     )
                 for day in days:
-                    keys = [
-                        i.split(':')
-                        for i in rdb.keys(day.strftime('%d%m%Y')+':*')]
+                    day = day.strftime('%d%m%Y')
+                    keys = [i.split(':') for i in rdb.keys(day+':*')]
                     for _, service_id in keys:
                         p = Program(day, service_id)
                         timestamps = p.get_start_time(self.name, self.towns)
