@@ -8,7 +8,7 @@ import logging
 import redis
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask
 from flask_script import Manager
 from logging.handlers import RotatingFileHandler
@@ -272,6 +272,10 @@ class Media(object):
     def schedule(self):
         """return datetimes for which the file is scheduled"""
         result = collections.OrderedDict()
+        days = [
+            datetime.today() + timedelta(i)
+            for i in range(-29, 30)
+            ]
         for town in self.towns:
             servers = CLUSTER[town]
             for server in servers:
@@ -279,14 +283,15 @@ class Media(object):
                     port=CONFIG.get('CLUSTER:'+town, server),
                     db=0
                     )
-                for i in rdb.keys('*:*'):
-                    day, service_id = i.split(':')
-                    p = Program(day, service_id)
-                    timestamps = p.get_start_time(self.name, self.towns)
-                    if service_id not in result:
-                        result[service_id] = set()
-                    for timestamp in timestamps:
-                        result[service_id].add(timestamp)
+                for day in days:
+                    keys = [i.split(':') for i in rdb.keys(day+':*')]
+                    for _, service_id in keys:
+                        p = Program(day, service_id)
+                        timestamps = p.get_start_time(self.name, self.towns)
+                        if service_id not in result:
+                            result[service_id] = set()
+                        for timestamp in timestamps:
+                            result[service_id].add(timestamp)
         return result
 
 
