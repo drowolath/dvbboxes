@@ -119,21 +119,17 @@ class Program(object):
                     if len(data) > foo[0] and data[-1][1] > foo[1]:
                         foo = (len(data), data[-1][1])
                         infos = data
-        result = []
         infos = sorted(infos, key=lambda x: int(x[0].split(':')[-1]))
         for filepath, timestamp in infos:
             yield (filepath.split('/')[-1], timestamp)
 
-    def get_start_time(self, filename, towns=None):
+    def get_start_times(self, filename, towns=None):
         """returns the start time(s) of a filename in the program"""
         if not filename.endswith('.ts'):
             filename += '.ts'
-        result = [
-            timestamp for name, timestamp in self.infos(towns)
-            if name.split(':')[0].startswith(filename)
-            ]
-        result = sorted(result)
-        return result
+        for name, timestamp in self.infos(towns):
+            if name.split(':')[0].startswith(filename):
+                yield timestamp
 
 
 class Listing(object):
