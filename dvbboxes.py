@@ -268,6 +268,26 @@ class Media(object):
                     result.add(i)
         return sorted(list(result))
 
+    def schedule(self):
+        """return datetimes for which the file is scheduled"""
+        result = collections.OrderedDict()
+        for town in self.towns:
+            servers = CLUSTER[town]
+            for server in servers:
+                rdb = redis.Redis(
+                    port=CONFIG.get('CLUSTER:'+town, server),
+                    db=1
+                    )
+                for i in rdb.keys('*:*'):
+                    day, service_id = i.split(':')
+                    p = Program(day, service_id)
+                    timestamps = p.get_start_time(self.name, self.towns)
+                    if service_id not in result:
+                        result[service_id] = set()
+                    for timestamp in timestamps:
+                        result[service_id].add(timestamp)
+        return result
+
 
 def cli():
     MANAGER.run()
