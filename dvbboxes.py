@@ -268,6 +268,7 @@ class Media(object):
                     result.add(i)
         return sorted(list(result))
 
+    @property
     def schedule(self):
         """return datetimes for which the file is scheduled"""
         result = collections.OrderedDict()
@@ -276,7 +277,7 @@ class Media(object):
             for server in servers:
                 rdb = redis.Redis(
                     port=CONFIG.get('CLUSTER:'+town, server),
-                    db=1
+                    db=0
                     )
                 for i in rdb.keys('*:*'):
                     day, service_id = i.split(':')
