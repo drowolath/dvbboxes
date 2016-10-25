@@ -283,7 +283,7 @@ class Media(object):
                     keys = [i.split(':') for i in rdb.keys(day+':*')]
                     for _, service_id in keys:
                         p = Program(day, service_id)
-                        timestamps = p.get_start_time(self.name, self.towns)
+                        timestamps = p.get_start_times(self.name, self.towns)
                         if service_id not in result:
                             result[service_id] = set()
                         for timestamp in timestamps:
