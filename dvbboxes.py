@@ -120,11 +120,9 @@ class Program(object):
                         foo = (len(data), data[-1][1])
                         infos = data
         result = []
+        infos = sorted(infos, key=lambda x: int(x[0].split(':')[-1]))
         for filepath, timestamp in infos:
-            result.append((filepath.split('/')[-1], timestamp))
-        result = sorted(result, key=lambda x: int(x[0].split(':')[-1]))
-        for i in result:
-            yield i
+            yield (filepath.split('/')[-1], timestamp)
 
     def get_start_time(self, filename, towns=None):
         """returns the start time(s) of a filename in the program"""
