@@ -123,7 +123,8 @@ class Program(object):
         for filepath, timestamp in infos:
             result.append((filepath.split('/')[-1], timestamp))
         result = sorted(result, key=lambda x: int(x[0].split(':')[-1]))
-        yield result
+        for i in result:
+            yield i
 
     def get_start_time(self, filename, towns=None):
         """returns the start time(s) of a filename in the program"""
