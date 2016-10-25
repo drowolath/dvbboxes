@@ -8,7 +8,7 @@ import logging
 import redis
 import sys
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from flask import Flask
 from flask_script import Manager
 from logging.handlers import RotatingFileHandler
@@ -164,13 +164,15 @@ class Listing(object):
     def parse(self):
         day = None
         data = None
+        index = None
         with open(self.filepath) as infile:
             for line in infile:
                 line = line.replace('\n', '').replace('\r', '')
                 if line and line.startswith('['):
                     if day:
                         yield json.dumps(data)
-                    data = {}
+                    data = collections.OrderedDict()
+                    index = 0
                     day = line.replace(
                         '[', '').replace(
                             ']', '').replace(
@@ -182,11 +184,12 @@ class Listing(object):
                     data['day'] = day
                 elif line:
                     duration = self.filenames[line]
-                    data[start] = {
+                    data[str(start)+'_'+str(index)] = {
                         'filename': line,
                         'duration': duration
                         }
                     start += duration
+                    index += 1
             else:
                 yield json.dumps(data)
 
