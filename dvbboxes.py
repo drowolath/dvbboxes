@@ -281,10 +281,13 @@ class Media(object):
                 for day in days:
                     day = day.strftime('%d%m%Y')
                     for key in rdb.keys(day+':*'):
+                        _, service_id = key.split(':')
                         infos = rdb.zrange(key, 0, -1, withscores=True)
                         for i, j in infos:
                             if '/'+self.name+':' in i:
-                                yield j
+                                if service_id not in result:
+                                    result[service_id] = set()
+                                result[service_id].add(j)
                     # keys = [i.split(':') for i in rdb.keys(day+':*')]
                     # for _, service_id in keys:
                     #     p = Program(day, service_id)
@@ -293,7 +296,7 @@ class Media(object):
                     #         result[service_id] = set()
                     #     for timestamp in timestamps:
                     #         result[service_id].add(timestamp)
-        # return result
+        return result
 
 
 def cli():
