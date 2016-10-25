@@ -267,10 +267,6 @@ class Media(object):
     def schedule(self):
         """return datetimes for which the file is scheduled"""
         result = collections.OrderedDict()
-        days = [
-            datetime.today() + timedelta(i)
-            for i in range(-29, 30)
-            ]
         for town in self.towns:
             servers = CLUSTER[town]
             for server in servers:
@@ -278,16 +274,14 @@ class Media(object):
                     port=CONFIG.get('CLUSTER:'+town, server),
                     db=0
                     )
-                for day in days:
-                    day = day.strftime('%d%m%Y')
-                    for key in rdb.keys(day+':*'):
-                        _, service_id = key.split(':')
-                        infos = rdb.zrange(key, 0, -1, withscores=True)
-                        for i, j in infos:
-                            if '/'+self.name+':' in i:
-                                if service_id not in result:
-                                    result[service_id] = set()
-                                result[service_id].add(j)
+                for key in rdb.keys('*:*'):
+                    day, service_id = key.split(':')
+                    infos = rdb.zrange(key, 0, -1, withscores=True)
+                    for i, j in infos:
+                        if '/'+self.name+':' in i:
+                            if service_id not in result:
+                                result[service_id] = set()
+                            result[service_id].add(j)
                     # keys = [i.split(':') for i in rdb.keys(day+':*')]
                     # for _, service_id in keys:
                     #     p = Program(day, service_id)
