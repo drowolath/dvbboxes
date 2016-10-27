@@ -201,22 +201,25 @@ class Listing(object):
             towns = TOWNS
         for data in parsed_data:
             day = data['day']
-            del data['day']
             zset_key = '{0}:{1}'.format(day, service_id)
             for town in towns:
                 servers = CLUSTER[town]
                 for server in servers:
                     rdb = redis.Redis(host=server, db=0, socket_timeout=5)
+                    starts = [i for i in data if i!='day']
                     try:
                         rdb.delete(zset_key)
-                        for key, infos in data.items():
-                            timestamp, index = key.split('_')
+                        for start in starts:
+                            timestamp, index = start.split('_')
                             timestamp = float(timestamp)
-                            filepath = '/opt/tsfiles/'+infos['filename']+'.ts'
+                            filename = data[start]['filename']
+                            filepath = '/opt/tsfiles/'+filename+'.ts'
                             rdb.zadd(
                                 zset_key, filepath+':'+index, timestamp
                                 )
-                        cmd = "ssh {0} dvbbox program {1} --update".format(server, day)
+                        cmd = ("ssh {0} dvbbox program {1} "
+                               "--service_id {2} --update").format(
+                                   server, day, service_id)
                         subprocess.Popen(shlex.split(cmd))
                     except redis.ConnectionError:
                         continue
