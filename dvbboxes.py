@@ -206,7 +206,7 @@ class Listing(object):
             for town in towns:
                 servers = CLUSTER[town]
                 for server in servers:
-                    rdb = redis.Redis(host=server, db=0)
+                    rdb = redis.Redis(host=server, db=0, socket_timeout=5)
                     rdb.delete(zset_key)
                     for key, infos in data.items():
                         timestamp, index = key.split('_')
