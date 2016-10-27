@@ -6,6 +6,8 @@ import ConfigParser
 import json
 import logging
 import redis
+import shlex
+import subprocess
 import sys
 import time
 from datetime import datetime
@@ -193,28 +195,28 @@ class Listing(object):
             else:
                 yield json.dumps(data)
 
-    def apply(self, service_id, towns=None):
-        for infos in self.parse():
-            index = 0
-            zset_key = '{0}:{1}'.format(infos['day'], service_id)
-            del infos['day']
-            if not towns:
-                towns = TOWNS
-            elif type(towns) is str:
-                towns = [towns]
+    @staticmethod
+    def apply(parsed_data, service_id, towns=None):
+        if not towns:
+            towns = TOWNS
+        for data in parsed_data:
+            day = data['day']
+            del data['day']
+            zset_key = '{0}:{1}'.format(day, service_id)
             for town in towns:
                 servers = CLUSTER[town]
                 for server in servers:
                     rdb = redis.Redis(host=server, db=0)
                     rdb.delete(zset_key)
-                    timestamps = sorted(infos)
-                    for timestamp in timestamps:
-                        info = infos[timestamp]
-                        filepath = '/opt/tsfiles/'+info['filename']
+                    for key, infos in data.items():
+                        timestamp, index = key.split('_')
+                        timestamp = float(timestamp)
+                        filepath = '/opt/tsfiles/'+infos['filename']
                         rdb.zadd(
-                            zset_key, filepath+':'+str(index), float(timestamp)
+                            zset_key, filepath+':'+index, timestamp
                             )
-                        index += 1
+                    cmd = "/usr/bin/dvbbox program {} --update".format(day)
+                    subprocess.Popen(shlex.split(cmd))
 
 
 class Media(object):
