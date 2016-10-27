@@ -207,16 +207,19 @@ class Listing(object):
                 servers = CLUSTER[town]
                 for server in servers:
                     rdb = redis.Redis(host=server, db=0, socket_timeout=5)
-                    rdb.delete(zset_key)
-                    for key, infos in data.items():
-                        timestamp, index = key.split('_')
-                        timestamp = float(timestamp)
-                        filepath = '/opt/tsfiles/'+infos['filename']+'.ts'
-                        rdb.zadd(
-                            zset_key, filepath+':'+index, timestamp
-                            )
-                    cmd = "ssh {0} dvbbox program {1} --update".format(server, day)
-                    subprocess.Popen(shlex.split(cmd))
+                    try:
+                        rdb.delete(zset_key)
+                        for key, infos in data.items():
+                            timestamp, index = key.split('_')
+                            timestamp = float(timestamp)
+                            filepath = '/opt/tsfiles/'+infos['filename']+'.ts'
+                            rdb.zadd(
+                                zset_key, filepath+':'+index, timestamp
+                                )
+                        cmd = "ssh {0} dvbbox program {1} --update".format(server, day)
+                        subprocess.Popen(shlex.split(cmd))
+                    except redis.ConnectionError:
+                        continue
 
 
 class Media(object):
