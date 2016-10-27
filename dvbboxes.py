@@ -121,6 +121,8 @@ class Program(object):
                     if len(data) > foo[0] and data[-1][1] > foo[1]:
                         foo = (len(data), data[-1][1])
                         infos = data
+        if not infos:
+            infos = []
         infos = sorted(infos, key=lambda x: int(x[0].split(':')[-1]))
         for filepath, timestamp in infos:
             yield (filepath.split('/')[-1], timestamp)
