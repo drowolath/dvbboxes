@@ -211,11 +211,11 @@ class Listing(object):
                     for key, infos in data.items():
                         timestamp, index = key.split('_')
                         timestamp = float(timestamp)
-                        filepath = '/opt/tsfiles/'+infos['filename']
+                        filepath = '/opt/tsfiles/'+infos['filename']+'.ts'
                         rdb.zadd(
                             zset_key, filepath+':'+index, timestamp
                             )
-                    cmd = "/usr/bin/dvbbox program {} --update".format(day)
+                    cmd = "ssh {0} dvbbox program {1} --update".format(server, day)
                     subprocess.Popen(shlex.split(cmd))
 
 
