@@ -32,6 +32,27 @@ CHANNELS = {
 for town in sorted(TOWNS):
     CLUSTER[town] = CONFIG.options('CLUSTER:'+town)
 
+RDBS = {
+    'slave': {},
+    'master': {}
+    }
+
+for town, servers in CLUSTER.items():
+    for server in servers:
+        RDBS['slave'][server] = {
+            'programs': redis.Redis(
+                port=CONFIG.get('CLUSTER:'+town, server), db=0, timeout=10
+                ).pipeline(),
+            'media': redis.Redis(
+                port=CONFIG.get('CLUSTER:'+town, server), db=1, timeout=10
+                ).pipeline(),
+            }
+        RDBS['master'][server] = {
+            'programs': redis.Redis(host=server, db=0, timeout=10).pipeline(),
+            'media': redis.Redis(host=server, db=1, timeout=10).pipeline(),
+            }
+
+
 # define logger
 LOGGER = logging.getLogger()
 LOGGER.setLevel(int(CONFIG.get('LOG', 'level')))
@@ -99,8 +120,10 @@ class Program(object):
         for town in towns:
             servers = CLUSTER[town]
             for server in servers:
-                rdb = redis.Redis(host=server, db=0)
-                data = rdb.zrange(self.redis_zset_key, 0, -1, withscores=True)
+                pipe = RDBS['slave'][server]['programs']
+                pipe.zrange(self.redis_zset_key, 0, -1, withscores=True)
+                data = pipe.execute()
+                data = data[0]
                 if data:
                     initial = data[0][1]
                     if self.timestamp >= initial:
@@ -112,12 +135,14 @@ class Program(object):
                                     ]
                                 )
                             )
-                        data = rdb.zrangebyscore(
+                        pipe.zrangebyscore(
                             self.redis_zset_key,
                             recalculated_start,
                             initial+86400,
                             withscores=True
                             )
+                        data = pipe.execute()
+                        data = data[0]
                     if len(data) > foo[0] and data[-1][1] > foo[1]:
                         foo = (len(data), data[-1][1])
                         infos = data
@@ -212,9 +237,8 @@ class Listing(object):
             for town in towns:
                 servers = CLUSTER[town]
                 for server in servers:
-                    result[town][day][server] = False
-                    rdb = redis.Redis(host=server, db=0, socket_timeout=5)
-                    pipe = rdb.pipeline()
+                    result[town][day][server] = {}
+                    pipe = RDBS['master'][server]['programs']
                     starts = [i for i in data if i != 'day']
                     try:
                         pipe.delete(zset_key)
@@ -226,12 +250,15 @@ class Listing(object):
                             pipe.zadd(
                                 zset_key, filepath+':'+index, timestamp
                                 )
-                        pipe.execute()
+                        result = pipe.execute()
                         cmd = ("ssh {0} dvbbox program {1} "
                                "--service_id {2} --update").format(
                                    server, day, service_id)
                         subprocess.Popen(shlex.split(cmd))
-                        result[town][server] = True
+                        result[town][server] = {
+                            'delete': result[0],
+                            'insert': result[1]
+                            }
                     except redis.ConnectionError:
                         continue
             return result
@@ -247,11 +274,10 @@ class Media(object):
         self.duration = 0
         for town, servers in CLUSTER.items():
             for server in servers:
-                rdb = redis.Redis(
-                    port=CONFIG.get('CLUSTER:'+town, server),
-                    db=1
-                    )
-                duration_value = rdb.get(self.name)
+                pipe = RDBS['slave'][server]['media']
+                pipe.get(self.name)
+                value = pipe.execute()
+                duration_value = value[0]
                 try:
                     if eval(duration_value) > self.duration:
                         self.duration = eval(duration_value)
@@ -278,11 +304,11 @@ class Media(object):
         for town in towns:
             servers = CLUSTER[town]
             for server in servers:
-                rdb = redis.Redis(
-                    port=CONFIG.get('CLUSTER:'+town, server),
-                    db=1
-                    )
-                for i in rdb.keys('*{}*'.format(expression)):
+                pipe = RDBS['slave'][server]['media']
+                pipe.keys('*{}*'.format(expression))
+                value = pipe.execute()
+                keys = value[0]
+                for i in keys:
                     result.add(i)
         return sorted(list(result))
 
@@ -293,13 +319,15 @@ class Media(object):
         for town in self.towns:
             servers = CLUSTER[town]
             for server in servers:
-                rdb = redis.Redis(
-                    port=CONFIG.get('CLUSTER:'+town, server),
-                    db=0
-                    )
-                for key in rdb.keys('*:*'):
+                pipe = RDBS['slave'][server]['media']
+                pipe.keys('*:*')
+                value = pipe.execute()
+                keys = value[0]
+                for key in keys:
                     day, service_id = key.split(':')
-                    infos = rdb.zrange(key, 0, -1, withscores=True)
+                    pipe.zrange(key, 0, -1, withscores=True)
+                    value = pipe.execute()
+                    infos = value[0]
                     for i, j in infos:
                         if '/'+self.name+':' in i:
                             if service_id not in result:
