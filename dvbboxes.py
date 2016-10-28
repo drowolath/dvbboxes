@@ -273,7 +273,7 @@ class Listing(object):
                             }
                     except redis.ConnectionError:
                         continue
-            return result
+        return result
 
 
 class Media(object):
