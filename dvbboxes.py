@@ -41,15 +41,27 @@ for town, servers in CLUSTER.items():
     for server in servers:
         RDBS['slave'][server] = {
             'programs': redis.Redis(
-                port=CONFIG.get('CLUSTER:'+town, server), db=0, timeout=10
+                port=CONFIG.get('CLUSTER:'+town, server),
+                db=0,
+                socket_timeout=10
                 ).pipeline(),
             'media': redis.Redis(
-                port=CONFIG.get('CLUSTER:'+town, server), db=1, timeout=10
+                port=CONFIG.get('CLUSTER:'+town, server),
+                db=1,
+                socket_timeout=10
                 ).pipeline(),
             }
         RDBS['master'][server] = {
-            'programs': redis.Redis(host=server, db=0, timeout=10).pipeline(),
-            'media': redis.Redis(host=server, db=1, timeout=10).pipeline(),
+            'programs': redis.Redis(
+                host=server,
+                db=0,
+                socket_timeout=10
+                ).pipeline(),
+            'media': redis.Redis(
+                host=server,
+                db=1,
+                socket_timeout=10
+                ).pipeline(),
             }
 
 
