@@ -245,8 +245,8 @@ class Listing(object):
         for data in parsed_data:
             day = data['day']
             zset_key = '{0}:{1}'.format(day, service_id)
-            result[town][day] = {}
             for town in towns:
+                result[town][day] = {}
                 servers = CLUSTER[town]
                 for server in servers:
                     result[town][day][server] = {}
