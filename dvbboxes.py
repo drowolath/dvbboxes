@@ -267,9 +267,9 @@ class Listing(object):
                                "--service_id {2} --update").format(
                                    server, day, service_id)
                         subprocess.Popen(shlex.split(cmd))
-                        result[town][server] = {
+                        result[town][day][server] = {
                             'delete': values[0],
-                            'insert': values[1:]
+                            'insert': all(values[1:])
                             }
                     except redis.ConnectionError:
                         continue
