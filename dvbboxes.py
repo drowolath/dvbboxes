@@ -246,10 +246,13 @@ class Listing(object):
             day = data['day']
             zset_key = '{0}:{1}'.format(day, service_id)
             for town in towns:
-                result[town][day] = {}
+                result[town][day] = {server: {} for server in CLUSTER[town]}
                 servers = CLUSTER[town]
                 for server in servers:
-                    result[town][day][server] = {}
+                    result[town][day][server] = {
+                        'delete': None,
+                        'insert': False
+                        }
                     pipe = RDBS['master'][server]['programs']
                     starts = [i for i in data if i != 'day']
                     try:
@@ -267,12 +270,10 @@ class Listing(object):
                                "--service_id {2} --update").format(
                                    server, day, service_id)
                         subprocess.Popen(shlex.split(cmd))
-                        result[town][day][server] = {
-                            'delete': values[0],
-                            'insert': all(values[1:])
-                            }
+                        result[town][day][server]['delete'] = values[0]
+                        result[town][day][server]['insert'] = all(values[1:])
                     except redis.ConnectionError:
-                        continue
+                        pass
         return result
 
 
