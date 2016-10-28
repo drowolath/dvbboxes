@@ -262,14 +262,14 @@ class Listing(object):
                             pipe.zadd(
                                 zset_key, filepath+':'+index, timestamp
                                 )
-                        result = pipe.execute()
+                        values = pipe.execute()
                         cmd = ("ssh {0} dvbbox program {1} "
                                "--service_id {2} --update").format(
                                    server, day, service_id)
                         subprocess.Popen(shlex.split(cmd))
                         result[town][server] = {
-                            'delete': result[0],
-                            'insert': result[1]
+                            'delete': values[0],
+                            'insert': values[1:]
                             }
                     except redis.ConnectionError:
                         continue
