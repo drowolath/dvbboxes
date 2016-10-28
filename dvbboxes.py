@@ -208,17 +208,19 @@ class Listing(object):
                 servers = CLUSTER[town]
                 for server in servers:
                     rdb = redis.Redis(host=server, db=0, socket_timeout=5)
-                    starts = [i for i in data if i!='day']
+                    pipe = rdb.pipeline()
+                    starts = [i for i in data if i != 'day']
                     try:
-                        rdb.delete(zset_key)
+                        pipe.delete(zset_key)
                         for start in starts:
                             timestamp, index = start.split('_')
                             timestamp = float(timestamp)
                             filename = data[start]['filename']
                             filepath = '/opt/tsfiles/'+filename+'.ts'
-                            rdb.zadd(
+                            pipe.zadd(
                                 zset_key, filepath+':'+index, timestamp
                                 )
+                        pipe.execute()
                         cmd = ("ssh {0} dvbbox program {1} "
                                "--service_id {2} --update").format(
                                    server, day, service_id)
