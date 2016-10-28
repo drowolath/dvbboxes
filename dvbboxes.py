@@ -199,14 +199,20 @@ class Listing(object):
 
     @staticmethod
     def apply(parsed_data, service_id, towns=None):
+        """takes the result of Listing.parse() to apply it"""
         if not towns:
             towns = TOWNS
+        result = {}
+        for town in towns:
+            result[town] = {}
         for data in parsed_data:
             day = data['day']
             zset_key = '{0}:{1}'.format(day, service_id)
+            result[town][day] = {}
             for town in towns:
                 servers = CLUSTER[town]
                 for server in servers:
+                    result[town][day][server] = False
                     rdb = redis.Redis(host=server, db=0, socket_timeout=5)
                     pipe = rdb.pipeline()
                     starts = [i for i in data if i != 'day']
@@ -225,8 +231,10 @@ class Listing(object):
                                "--service_id {2} --update").format(
                                    server, day, service_id)
                         subprocess.Popen(shlex.split(cmd))
+                        result[town][server] = True
                     except redis.ConnectionError:
                         continue
+            return result
 
 
 class Media(object):
