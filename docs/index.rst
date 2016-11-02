@@ -4,7 +4,7 @@
 dvbboxes
 ========
 
-:code:`dvbboxes` est une application qui tente d'autoriser la gestion de plusieurs instances de :ref:`_dvbbox`.
+:code:`dvbboxes` est une application qui tente d'autoriser la gestion de plusieurs instances de :code:`dvbbox`.
 
 L'idée est de grouper les instances par réseau/ville/ce que vous voulez. Chaque groupe est aussi considéré comme un cluster.
 
@@ -27,7 +27,7 @@ En tant qu'aggrégateur, :code:`dvbboxes` a besoin de configurations assez lourd
 Instances REDIS esclaves
 ------------------------
 
-:ref:`_dvbbox` repose sur REDIS pour stocker les infos relatives:
+:code:`dvbbox` repose sur REDIS pour stocker les infos relatives:
 
 * aux programmes de diffusions
 * aux durées des fichiers media présents sur le disque
@@ -46,7 +46,7 @@ et sur quel port local on veut déployer l'esclave.
 
 Ce fichier contient les différentes informations sur le cluster à gérer, l'emplacement des fichiers de logs, des données vitale, etc.
 
-.. code-block:: bash
+.. code-block:: INI
 
    [LOG]
    filepath=/tmp/dvbboxes.log
@@ -75,8 +75,8 @@ Installation
 
    $ git clone http://gitlab.blueline.mg/default/dvbboxes.git -b master
    $ cd dvbboxes
-   $ make
-   $ sudo make install
+   $ python setup.py install --user  # longue vie à Pip
+
 
 dvbboxes est maintenant installé et le binaire :file:`/usr/bin/dvbboxes` est mis à disposition en tant qu'interface CLI
 
