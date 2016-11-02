@@ -1,5 +1,5 @@
 .. _dvbboxes:
-
+1;2802;0c
 ========
 dvbboxes
 ========
@@ -75,7 +75,8 @@ Installation
 
    $ git clone http://gitlab.blueline.mg/default/dvbboxes.git -b master
    $ cd dvbboxes
-   $ python setup.py install --user  # longue vie à Pip
+   $ make
+   $ sudo make install
 
 
 dvbboxes est maintenant installé et le binaire :file:`/usr/bin/dvbboxes` est mis à disposition en tant qu'interface CLI
