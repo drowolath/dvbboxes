@@ -201,7 +201,7 @@ class Listing(object):
         filenames = list(set(filenames))
         errs = []
         for filename in filenames:
-            if re.match('^\[0-9a-z_]+$', filename) is not None:
+            if re.match('^[0-9a-z_]+$', filename) is not None:
                 self.filenames[filename] = Media(filename).duration
             else:
                 errs.append(filename)
