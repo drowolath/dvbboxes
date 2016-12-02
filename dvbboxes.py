@@ -5,6 +5,7 @@ import collections
 import ConfigParser
 import json
 import logging
+import re
 import redis
 import shlex
 import subprocess
@@ -180,6 +181,8 @@ class Listing(object):
         listing = ConfigParser.ConfigParser(allow_no_value=True)
         listing.read(self.filepath)
         days = listing.sections()
+        if not days:
+            raise Warning("No sections have been detected")
         today = time.localtime()
         year = today.tm_year
         self.days = []
@@ -196,12 +199,18 @@ class Listing(object):
             i for sublist in filenames for i in sublist
             ]
         filenames = list(set(filenames))
+        errs = []
         for filename in filenames:
-            self.filenames[filename] = Media(filename).duration
+            if re.match('^\[0-9a-z_]+$', filename) is not None:
+                self.filenames[filename] = Media(filename).duration
+            else:
+                errs.append(filename)
+        if errs:
+            raise ValueError(errs)
 
     def __repr__(self):
         return '<Listing {}>'.format(self.filepath)
-
+    
     def parse(self):
         day = None
         data = None
@@ -220,9 +229,6 @@ class Listing(object):
                                 '/', '')
                     try:
                         day = [i for i in self.days if i.startswith(day)].pop()
-                    except IndexError:
-                        day = None
-                    else:
                         start = time.mktime(
                             time.strptime(
                                 '{} 073000'.format(day),
@@ -230,6 +236,8 @@ class Listing(object):
                                 )
                             )
                         data['day'] = day
+                    except (IndexError, ValueError):
+                        raise Warning("Wrong format for {0}".format(line))
                 elif line:
                     duration = self.filenames[line]
                     data[str(start)+'_'+str(index)] = {
