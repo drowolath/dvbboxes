@@ -218,11 +218,18 @@ class Listing(object):
                         '[', '').replace(
                             ']', '').replace(
                                 '/', '')
-                    day = [i for i in self.days if i.startswith(day)].pop()
-                    start = time.mktime(
-                        time.strptime('{} 073000'.format(day), '%d%m%Y %H%M%S')
-                        )
-                    data['day'] = day
+                    try:
+                        day = [i for i in self.days if i.startswith(day)].pop()
+                    except IndexError:
+                        day = None
+                    else:
+                        start = time.mktime(
+                            time.strptime(
+                                '{} 073000'.format(day),
+                                '%d%m%Y %H%M%S'
+                                )
+                            )
+                        data['day'] = day
                 elif line:
                     duration = self.filenames[line]
                     data[str(start)+'_'+str(index)] = {
