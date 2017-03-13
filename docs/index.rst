@@ -73,7 +73,7 @@ Installation
 
 .. code-block:: bash
 
-   $ git clone http://gitlab.blueline.mg/default/dvbboxes.git -b master
+   $ git clone http://github.com/drowolath/dvbboxes.git -b master
    $ cd dvbboxes
    $ make
    $ sudo make install

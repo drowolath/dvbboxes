@@ -22,5 +22,4 @@ setup(
     entry_points={
         'console_scripts': ['dvbboxes=dvbboxes:cli'],
         },
-    url='http://gitlab.blueline.mg/default/dvbboxes.git',
 )
